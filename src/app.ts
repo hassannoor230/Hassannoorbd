@@ -9,6 +9,7 @@ import { uploadDirectory, isManagedImageId } from './middleware/upload';
 import { api } from './routes';
 import { HttpError } from './utils/errors';
 import { errorHandler, notFound } from './middleware/error';
+import { env } from './config/env';
 
 function isLocalOrigin(origin: string) {
   try {
@@ -45,7 +46,21 @@ function buildApp() {
       if (error) next(new HttpError(404, 'Image not found'));
     });
   });
+  // Favicon - avoid 404 noise
+  app.get('/favicon.ico', (_req, res) => res.status(204).end());
+  // Root route - service status
+  app.get('/', (_req, res) => res.json({ 
+    success: true, 
+    data: { 
+      service: 'Hassan Noor Portfolio API',
+      version: '1.0.0',
+      status: 'running'
+    } 
+  }));
+  // Health checks
   app.get('/health', (_req, res) => res.json({ ok: true, db: dbState() }));
+  app.get('/api/health', (_req, res) => res.json({ ok: true, db: dbState() }));
+  app.get('/api/v1/health', (_req, res) => res.json({ ok: true, db: dbState() }));
   app.use('/api/v1', async (req, _res, next) => {
     if (req.path === '/contact') return next();
     await connectDb();

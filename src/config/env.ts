@@ -32,16 +32,17 @@ if (!parsed.success) {
   process.exit(1);
 }
 export const env = parsed.data;
-export const allowedOrigins = env.CLIENT_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean);
+export const allowedOrigins = env.CLIENT_ORIGIN.split(',').map((s) => s.trim().replace(/\/+$/, '')).filter(Boolean);
 export const isProd = env.NODE_ENV === 'production';
 
 // Exact origins only, plus an explicit opt-in "*.example.com" entry for wildcard hosts such as
 // Vercel preview deployments.
 export function originAllowed(origin: string) {
+  const normalizedOrigin = origin.replace(/\/+$/, '');
   return allowedOrigins.some((allowed) => {
-    if (allowed === origin) return true;
+    if (allowed === normalizedOrigin) return true;
     if (!allowed.startsWith('*.')) return false;
     const suffix = allowed.slice(1);
-    return origin.endsWith(suffix) && origin.length > suffix.length;
+    return normalizedOrigin.endsWith(suffix) && normalizedOrigin.length > suffix.length;
   });
 }
