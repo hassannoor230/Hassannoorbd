@@ -14,7 +14,10 @@ const schema = z.object({
   ADMIN_PASSWORD: z.string().optional(),
   SMTP_HOST: z.string().trim().optional(),
   SMTP_PORT: z.coerce.number().int().positive().default(587),
-  SMTP_SECURE: z.enum(['true', 'false']).default('false').transform((value) => value === 'true'),
+  SMTP_SECURE: z.preprocess(
+    (value) => typeof value === 'string' ? value.toLowerCase() : value,
+    z.enum(['true', 'false']).default('false').transform((value) => value === 'true'),
+  ),
   SMTP_USER: z.string().optional(),
   SMTP_PASS: z.string().optional(),
   SMTP_FROM: z.preprocess((value) => value === '' ? undefined : value, z.string().email().optional()),
