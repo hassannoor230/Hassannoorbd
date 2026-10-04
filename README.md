@@ -2,6 +2,9 @@
 
 1. Copy `.env.example` to `.env` and fill in `MONGODB_URI`, `CLIENT_ORIGIN`, and two 32+ char secrets
    (`node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`).
+   `CLIENT_ORIGIN` is a comma-separated list of the exact site origins allowed to call the API, e.g.
+   `https://your-site.com,https://your-site.vercel.app,*.your-site.vercel.app`. A browser request from any other
+   origin is rejected with 403 and the log names that origin — a silent 500 on every request means this list is wrong.
    For contact form email, also set `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, and `CONTACT_OWNER_EMAIL`.
    `SMTP_FROM` is optional (defaults to `SMTP_USER`); use `SMTP_SECURE=true` for port 465.
 2. `npm install`

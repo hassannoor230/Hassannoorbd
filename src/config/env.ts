@@ -34,3 +34,14 @@ if (!parsed.success) {
 export const env = parsed.data;
 export const allowedOrigins = env.CLIENT_ORIGIN.split(',').map((s) => s.trim()).filter(Boolean);
 export const isProd = env.NODE_ENV === 'production';
+
+// Exact origins only, plus an explicit opt-in "*.example.com" entry for wildcard hosts such as
+// Vercel preview deployments.
+export function originAllowed(origin: string) {
+  return allowedOrigins.some((allowed) => {
+    if (allowed === origin) return true;
+    if (!allowed.startsWith('*.')) return false;
+    const suffix = allowed.slice(1);
+    return origin.endsWith(suffix) && origin.length > suffix.length;
+  });
+}

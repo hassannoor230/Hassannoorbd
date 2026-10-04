@@ -3,7 +3,7 @@ import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
 import rateLimit from 'express-rate-limit';
-import { allowedOrigins, isProd } from './config/env';
+import { allowedOrigins, isProd, originAllowed } from './config/env';
 import { connectDb, dbState } from './config/db';
 import { uploadDirectory, isManagedImageId } from './middleware/upload';
 import { api } from './routes';
@@ -23,7 +23,12 @@ function buildApp() {
   app.disable('x-powered-by');
   app.use(helmet());
   app.use(cors({
-    origin: (origin, cb) => (!origin || allowedOrigins.includes(origin) || (!isProd && isLocalOrigin(origin)) ? cb(null, true) : cb(new Error('Origin not allowed'))),
+    origin: (origin, cb) => {
+      if (!origin || originAllowed(origin) || (!isProd && isLocalOrigin(origin))) return cb(null, true);
+      // Naming the rejected origin makes the fix obvious in the deployment logs.
+      console.warn(`CORS blocked origin "${origin}". CLIENT_ORIGIN allows: ${allowedOrigins.join(', ')}`);
+      cb(new HttpError(403, `Origin ${origin} is not allowed`));
+    },
     credentials: true,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
