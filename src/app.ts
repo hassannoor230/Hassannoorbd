@@ -2,13 +2,13 @@ import express from 'express';
 import helmet from 'helmet';
 import cors from 'cors';
 import cookieParser from 'cookie-parser';
-import path from 'node:path';
 import rateLimit from 'express-rate-limit';
-import { allowedOrigins, env, isProd } from './config/env';
-import { dbState } from './config/db';
+import { allowedOrigins, isProd } from './config/env';
+import { connectDb, dbState } from './config/db';
+import { uploadDirectory, isManagedImageId } from './middleware/upload';
 import { api } from './routes';
+import { HttpError } from './utils/errors';
 import { errorHandler, notFound } from './middleware/error';
-import { connectDb } from './config/db';
 
 function isLocalOrigin(origin: string) {
   try {
@@ -17,7 +17,7 @@ function isLocalOrigin(origin: string) {
   } catch { return false; }
 }
 
-export function createApp() {
+function buildApp() {
   const app = express();
   if (isProd) app.set('trust proxy', 1);
   app.disable('x-powered-by');
@@ -32,10 +32,14 @@ export function createApp() {
   app.use(rateLimit({ windowMs: 15 * 60 * 1000, limit: 600, standardHeaders: true, legacyHeaders: false }));
   app.use(express.json({ limit: '1mb' }));
   app.use(cookieParser());
-  app.use('/uploads', (_req, res, next) => {
+  // Vercel ignores express.static, so uploaded images are streamed from UPLOAD_DIR by hand.
+  app.get('/uploads/:file', (req, res, next) => {
+    if (!isManagedImageId(req.params.file)) return next();
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
-    next();
-  }, express.static(path.resolve(process.cwd(), env.UPLOAD_DIR), { immutable: true, maxAge: '1y' }));
+    res.sendFile(req.params.file, { root: uploadDirectory, immutable: true, maxAge: '1y' }, (error) => {
+      if (error) next(new HttpError(404, 'Image not found'));
+    });
+  });
   app.get('/health', (_req, res) => res.json({ ok: true, db: dbState() }));
   app.use('/api/v1', async (req, _res, next) => {
     if (req.path === '/contact') return next();
@@ -45,7 +49,15 @@ export function createApp() {
   app.use('/api/v1', api);
   app.use(notFound);
   app.use(errorHandler);
+  // Warm the connection at cold start so /health reports the real state. Requests still await it.
+  void connectDb().catch(() => null);
   return app;
+}
+
+let instance: ReturnType<typeof buildApp> | undefined;
+export function createApp() {
+  instance ??= buildApp();
+  return instance;
 }
 
 const app = createApp();

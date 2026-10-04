@@ -1,10 +1,10 @@
 import { env } from './config/env';
-import { connectDb, disconnectDb } from './config/db';
+import { disconnectDb } from './config/db';
 import { createApp } from './app';
 
-(async () => {
-  await connectDb();
-  const server = createApp().listen(env.PORT, () => console.log(`API listening on :${env.PORT}`));
-  const stop = () => server.close(async () => { await disconnectDb(); process.exit(0); });
-  process.on('SIGTERM', stop); process.on('SIGINT', stop);
-})().catch((e) => { console.error('Startup failed:', e.message); process.exit(1); });
+// Vercel detects the HTTP server from the listen() call at module load, so it must not wait on the
+// database. Requests open the connection lazily through the middleware in app.ts.
+const server = createApp().listen(Number(process.env.PORT ?? 4000), () => console.log(`API listening on :${env.PORT}`));
+
+const stop = () => server.close(async () => { await disconnectDb(); process.exit(0); });
+process.on('SIGTERM', stop); process.on('SIGINT', stop);

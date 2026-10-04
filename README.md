@@ -15,6 +15,10 @@ Admin project covers accept JPEG, PNG, and WebP files up to 5 MB. Files are stor
 
 ## Deploying on Vercel
 
-`vercel.json` builds `src/handler.ts` as the single serverless function and routes every path to it, so `GET /health` should answer `{"ok":true,"db":"connected"}`. Without a reachable database the API answers 500 and the log line `MongoDB connection failed:` names the real cause — a wrong `MONGODB_URI`, or Atlas rejecting Vercel's egress IPs. Vercel does not publish fixed outbound addresses on serverless plans, so either allow `0.0.0.0/0` in Atlas Network Access or front the cluster with Atlas Data API / a fixed-IP gateway.
+Vercel only recognises `app` / `index` / `server` at the project root or under `src/`, and only if the file exports the app as its default export or calls `listen()` during module load. `src/app.ts` therefore ends with `export default app`, `src/server.ts` listens immediately (never before the database is reachable), and `vercel.json` pins the entry to `src/handler.ts` so detection cannot pick the wrong file. An unreachable database can no longer break detection.
+
+Check a deploy with `GET /health`, which answers `{"ok":true,"db":"connected"}`. When the database is unreachable the API returns 500 and the log line `MongoDB connection failed:` names the real cause — a wrong `MONGODB_URI`, or Atlas rejecting Vercel's egress IPs. Vercel does not publish fixed outbound addresses on serverless plans, so either allow `0.0.0.0/0` in Atlas Network Access or front the cluster with Atlas Data API / a fixed-IP gateway.
+
+Vercel ignores `express.static`, so `/uploads/:file` streams files from `UPLOAD_DIR` directly. Those files still live on an ephemeral filesystem and disappear on cold starts and redeploys; move image storage to Vercel Blob, S3, or Cloudinary if uploads must survive.
 
 Not yet built: media library, SEO, settings, analytics, chatbot, tests.
