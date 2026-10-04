@@ -7,6 +7,7 @@ import rateLimit from 'express-rate-limit';
 import { allowedOrigins, env, isProd } from './config/env';
 import { api } from './routes';
 import { errorHandler, notFound } from './middleware/error';
+import { connectDb } from './config/db';
 
 function isLocalOrigin(origin: string) {
   try {
@@ -35,6 +36,11 @@ export function createApp() {
     next();
   }, express.static(path.resolve(process.cwd(), env.UPLOAD_DIR), { immutable: true, maxAge: '1y' }));
   app.get('/health', (_req, res) => res.json({ ok: true }));
+  app.use('/api/v1', async (req, _res, next) => {
+    if (req.path === '/contact') return next();
+    await connectDb();
+    next();
+  });
   app.use('/api/v1', api);
   app.use(notFound);
   app.use(errorHandler);
