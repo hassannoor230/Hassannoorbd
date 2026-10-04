@@ -1,0 +1,20 @@
+import { Router } from 'express';
+import * as c from '../controllers/admin';
+import { requireAuth, requireRole } from '../middleware/auth';
+import { receiveProjectImage } from '../middleware/upload';
+
+export const adminRouter = Router();
+adminRouter.use(requireAuth, requireRole('admin'));
+adminRouter.post('/uploads', receiveProjectImage, c.uploadProjectImage);
+adminRouter.delete('/uploads/:publicId', c.deleteProjectImage);
+adminRouter.get('/overview', c.overview);
+adminRouter.get('/projects', c.listProjects);
+adminRouter.post('/projects', c.createProject);
+adminRouter.patch('/projects/:id', c.updateProject);
+adminRouter.delete('/projects/:id', c.deleteProject);
+adminRouter.get('/categories', c.listCategories);
+adminRouter.post('/categories', c.createCategory);
+adminRouter.patch('/categories/:id', c.updateCategory);
+adminRouter.delete('/categories/:id', c.deleteCategory);
+adminRouter.get('/profile', c.getProfile);
+adminRouter.patch('/profile', c.updateProfile);
