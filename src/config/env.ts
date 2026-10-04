@@ -9,7 +9,8 @@ const schema = z.object({
   JWT_ACCESS_SECRET: z.string().min(32, 'JWT_ACCESS_SECRET must be >= 32 chars'),
   JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET must be >= 32 chars'),
   COOKIE_SAMESITE: z.enum(['lax', 'strict', 'none']).default('lax'),
-  UPLOAD_DIR: z.string().trim().min(1).default('uploads'),
+  // Serverless deployments ship a read-only filesystem, so uploads must live in /tmp there.
+  UPLOAD_DIR: z.string().trim().min(1).default(process.env.VERCEL ? '/tmp/uploads' : 'uploads'),
   ADMIN_EMAIL: z.string().email().optional(),
   ADMIN_PASSWORD: z.string().optional(),
   SMTP_HOST: z.string().trim().optional(),

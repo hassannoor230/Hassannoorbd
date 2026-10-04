@@ -5,6 +5,7 @@ import cookieParser from 'cookie-parser';
 import path from 'node:path';
 import rateLimit from 'express-rate-limit';
 import { allowedOrigins, env, isProd } from './config/env';
+import { dbState } from './config/db';
 import { api } from './routes';
 import { errorHandler, notFound } from './middleware/error';
 import { connectDb } from './config/db';
@@ -35,7 +36,7 @@ export function createApp() {
     res.setHeader('Cross-Origin-Resource-Policy', 'cross-origin');
     next();
   }, express.static(path.resolve(process.cwd(), env.UPLOAD_DIR), { immutable: true, maxAge: '1y' }));
-  app.get('/health', (_req, res) => res.json({ ok: true }));
+  app.get('/health', (_req, res) => res.json({ ok: true, db: dbState() }));
   app.use('/api/v1', async (req, _res, next) => {
     if (req.path === '/contact') return next();
     await connectDb();
