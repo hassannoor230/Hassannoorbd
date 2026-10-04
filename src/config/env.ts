@@ -12,6 +12,13 @@ const schema = z.object({
   UPLOAD_DIR: z.string().trim().min(1).default('uploads'),
   ADMIN_EMAIL: z.string().email().optional(),
   ADMIN_PASSWORD: z.string().optional(),
+  SMTP_HOST: z.string().trim().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().default(587),
+  SMTP_SECURE: z.enum(['true', 'false']).default('false').transform((value) => value === 'true'),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.preprocess((value) => value === '' ? undefined : value, z.string().email().optional()),
+  CONTACT_OWNER_EMAIL: z.preprocess((value) => value === '' ? undefined : value, z.string().email().optional()),
 });
 
 const parsed = schema.safeParse(process.env);

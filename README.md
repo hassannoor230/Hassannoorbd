@@ -1,7 +1,9 @@
 # Server (Express + MongoDB)
 
-1. `cp .env.example .env` and fill in `MONGODB_URI`, `CLIENT_ORIGIN`, and two 32+ char secrets
+1. Copy `.env.example` to `.env` and fill in `MONGODB_URI`, `CLIENT_ORIGIN`, and two 32+ char secrets
    (`node -e "console.log(require('crypto').randomBytes(48).toString('hex'))"`).
+   For contact form email, also set `SMTP_HOST`, `SMTP_USER`, `SMTP_PASS`, and `CONTACT_OWNER_EMAIL`.
+   `SMTP_FROM` is optional (defaults to `SMTP_USER`); use `SMTP_SECURE=true` for port 465.
 2. `npm install`
 3. `npm run admin:init` (reads ADMIN_EMAIL / ADMIN_PASSWORD; refuses if an admin exists; add `-- --reset-password` to rotate). Remove ADMIN_PASSWORD from the environment afterwards.
 4. `npm run seed` (safe to repeat).
@@ -11,4 +13,4 @@ Auth: login returns a 15-minute access token (keep in memory, not localStorage).
 
 Admin project covers accept JPEG, PNG, and WebP files up to 5 MB. Files are stored under `UPLOAD_DIR` (default `uploads`) and served from `/uploads`. Configure a persistent volume for this directory in production; ephemeral server filesystems do not retain uploads across redeploys.
 
-Not yet built: contact, media library, SEO, settings, analytics, chatbot, tests.
+Not yet built: media library, SEO, settings, analytics, chatbot, tests.

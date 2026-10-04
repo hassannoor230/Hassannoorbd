@@ -3,6 +3,63 @@ import { Category } from '../models/Category';
 import { Project } from '../models/Project';
 import { SiteProfile } from '../models/SiteProfile';
 import { HttpError } from '../utils/errors';
+import { z } from 'zod';
+import nodemailer from 'nodemailer';
+import { env } from '../config/env';
+
+const contactSchema = z.object({
+  name: z.string().trim().min(2).max(100),
+  email: z.string().trim().email().max(254),
+  company: z.string().trim().max(120).optional(),
+  projectType: z.string().trim().min(1).max(100),
+  budget: z.string().trim().max(200).optional(),
+  message: z.string().trim().min(20).max(4000),
+  consent: z.literal(true),
+  website: z.string().max(0).optional(),
+});
+
+export async function submitContact(req: Request, res: Response) {
+  const contact = contactSchema.parse(req.body);
+  if (contact.website) return res.json({ success: true });
+  if (!env.SMTP_HOST || !env.SMTP_USER || !env.SMTP_PASS || !env.CONTACT_OWNER_EMAIL) {
+    throw new HttpError(503, 'Contact email is not configured');
+  }
+
+  const transporter = nodemailer.createTransport({
+    host: env.SMTP_HOST,
+    port: env.SMTP_PORT,
+    secure: env.SMTP_SECURE,
+    auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
+  });
+  const from = env.SMTP_FROM || env.SMTP_USER;
+  const details = [
+    `Name: ${contact.name}`,
+    `Email: ${contact.email}`,
+    `Company: ${contact.company || 'Not provided'}`,
+    `Project type: ${contact.projectType}`,
+    `Budget: ${contact.budget || 'Not provided'}`,
+    '',
+    contact.message,
+  ].join('\n');
+
+  await Promise.all([
+    transporter.sendMail({
+      from,
+      to: env.CONTACT_OWNER_EMAIL,
+      replyTo: contact.email,
+      subject: 'New portfolio contact form message',
+      text: details,
+    }),
+    transporter.sendMail({
+      from,
+      to: contact.email,
+      subject: 'Thanks for contacting Hassan Noor',
+      text: `Hi ${contact.name},\n\nThanks for contacting us. We will get back to you within 24 hours.\n\nYour message:\n${contact.message}\n\nHassan Noor`,
+    }),
+  ]);
+
+  res.json({ success: true });
+}
 
 export async function listProjects(_req: Request, res: Response) {
   const items = await Project.find({ status: 'published' })
