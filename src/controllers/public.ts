@@ -31,6 +31,14 @@ export async function submitContact(req: Request, res: Response) {
     secure: env.SMTP_SECURE,
     auth: { user: env.SMTP_USER, pass: env.SMTP_PASS },
   });
+
+  try {
+    await transporter.verify();
+  } catch (e: any) {
+    console.error('SMTP connection failed:', e?.message ?? e);
+    throw new HttpError(503, `Email service unavailable: ${e?.message ?? 'SMTP connection failed'}`);
+  }
+
   const from = env.SMTP_FROM || env.SMTP_USER;
   const details = [
     `Name: ${contact.name}`,
